@@ -3970,6 +3970,28 @@
       }
     }
 
+    const LOCAL_STORAGE_FAVORITES_KEY = 'xhs-cover-favorites';
+
+    function readFavoritesFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_FAVORITES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed)
+          ? parsed.filter((item) => item && typeof item === 'object' && item.id && item.config)
+          : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function writeFavoritesToLocalStorage(favorites) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_FAVORITES_KEY, JSON.stringify(favorites));
+      } catch (_) {
+        // localStorage full or unavailable — ignore silently
+      }
+    }
+
     async function loadFavoriteConfigs() {
       try {
         const data = await apiRequest(apiRoutes.favorites);
@@ -3978,11 +4000,12 @@
           : [];
         favoriteConfigs = nextFavorites;
         favoritesSyncAvailable = true;
+        // Keep localStorage in sync with server data
+        writeFavoritesToLocalStorage(nextFavorites);
       } catch (error) {
-        console.warn('收藏配置读取失败。', error);
-        favoriteConfigs = [];
+        console.warn('收藏 API 不可用，从 localStorage 读取。', error);
+        favoriteConfigs = readFavoritesFromLocalStorage();
         favoritesSyncAvailable = false;
-        setStatusMessage('收藏服务不可用，当前只能使用创建和抽卡。');
       }
 
       favoritesLoaded = true;
@@ -3992,15 +4015,25 @@
     }
 
     async function persistFavoriteConfigs() {
-      const data = await apiRequest(apiRoutes.favorites, {
-        method: 'PUT',
-        body: JSON.stringify({ favorites: favoriteConfigs })
-      });
+      // Always persist to localStorage first (works everywhere)
+      writeFavoritesToLocalStorage(favoriteConfigs);
 
-      favoriteConfigs = Array.isArray(data?.favorites)
-        ? data.favorites.filter((item) => item && typeof item === 'object' && item.id && item.config)
-        : favoriteConfigs;
-      favoritesSyncAvailable = true;
+      if (favoritesSyncAvailable) {
+        try {
+          const data = await apiRequest(apiRoutes.favorites, {
+            method: 'PUT',
+            body: JSON.stringify({ favorites: favoriteConfigs })
+          });
+          favoriteConfigs = Array.isArray(data?.favorites)
+            ? data.favorites.filter((item) => item && typeof item === 'object' && item.id && item.config)
+            : favoriteConfigs;
+          // Re-sync localStorage with server response
+          writeFavoritesToLocalStorage(favoriteConfigs);
+        } catch (error) {
+          console.warn('收藏 API 写入失败，已保存到 localStorage。', error);
+        }
+      }
+
       renderFavoriteConfigs();
       syncAppModeUi();
       return favoriteConfigs;
@@ -4501,11 +4534,7 @@
 
     function renderFavoriteConfigs() {
       if (!favoriteConfigs.length) {
-        favoritesList.innerHTML = `<div class="favorites-empty">${
-          favoritesSyncAvailable
-            ? '还没有收藏配置。调整好模板、背景、渐变和遮罩后，点一次“收藏当前配置”，下次就能一键复用。'
-            : '收藏服务暂时不可用。启动本地服务后，这里会显示共享收藏配置。'
-        }</div>`;
+        favoritesList.innerHTML = `<div class=”favorites-empty”>还没有收藏配置。调整好模板、背景、渐变和遮罩后，点一次”收藏当前配置”，下次就能一键复用。</div>`;
         return;
       }
 
@@ -4674,10 +4703,10 @@
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-pressed', String(isActive));
       });
-      favoriteExportBtn.disabled = !favoritesSyncAvailable || !favoriteConfigs.length || !activeFavoriteId;
+      favoriteExportBtn.disabled = !favoriteConfigs.length || !activeFavoriteId;
       drawExportBtn.disabled = !activeDrawPresetId;
-      saveDrawFavoriteBtn.disabled = !favoritesSyncAvailable || !activeDrawPresetId;
-      saveFavoriteQuickBtn.disabled = !favoritesSyncAvailable;
+      saveDrawFavoriteBtn.disabled = !activeDrawPresetId;
+      saveFavoriteQuickBtn.disabled = false;
       updateFavoriteBackgroundStatus();
     }
 
@@ -4695,13 +4724,7 @@
 
       if (nextMode === 'favorites') {
         appMode = 'favorites';
-        if (!favoritesSyncAvailable) {
-          activeFavoriteId = '';
-          favoriteBaseBackground = { dataUrl: '', name: '' };
-          setModeCopy('favorites', createWorkspaceSnapshot || defaultCopy);
-          updateFavoriteBackgroundStatus();
-          setStatusMessage('收藏服务不可用，启动本地服务后可使用共享收藏。');
-        } else if (favoriteConfigs.length) {
+        if (favoriteConfigs.length) {
           const favorite = favoriteConfigs.find((item) => item.id === activeFavoriteId) || favoriteConfigs[0];
           applyFavoriteConfig(favorite, { copyMode: 'favorites' });
         } else {
