@@ -4,9 +4,9 @@
 
 ## 效果示例
 
-| 抽卡模式 | 收藏模式 |
-| --- | --- |
-| ![Draw Demo](assets/demo-draw.png) | ![Favorite Demo](assets/demo-favorite.png) |
+| 自行创建 | 抽卡 | 收藏 |
+| --- | --- | --- |
+| ![自行创建](assets/demo-create.jpg) | ![抽卡](assets/demo-draw.jpg) | ![收藏](assets/demo-favorites.jpg) |
 
 ---
 
