@@ -43,19 +43,21 @@ function findChromeBinary() {
   return candidates[0];
 }
 
-function sanitizeFilePart(value = '') {
-  const normalized = String(value)
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\p{Letter}\p{Number}-]+/gu, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  return normalized || 'cover';
-}
-
-function createTimestamp() {
-  return new Date().toISOString().replace(/[:.]/g, '-');
+async function pollAutomationResult(serverUrl, timeout = 60000) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    try {
+      const response = await fetch(`${serverUrl}/api/automation-result`);
+      const data = await response.json();
+      if (data && data.status !== 'pending') {
+        return data;
+      }
+    } catch (_) {
+      // Server not ready yet, retry
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error('自动化渲染超时');
 }
 
 const args = parseCliArgs(process.argv.slice(2));
@@ -95,45 +97,43 @@ const server = await startServer({
 
 try {
   await fs.mkdir(outputDir, { recursive: true });
-  const outputPath = path.join(
-    outputDir,
-    `${createTimestamp()}-${sanitizeFilePart(args.filenameHint || `${mode}-${title}`).slice(0, 80)}.png`
-  );
+
   const payload = encodePayload({
     mode,
     title,
     subtitle: args.subtitle || '',
     intent: args.intent || 'all',
     favoriteId: args.favoriteId || '',
+    filenameHint: `${mode}-${title}`
   });
 
   const automationUrl = `${server.url}/index.html?automation=1&payload=${payload}`;
-  await execFileAsync(chromeBinary, [
+
+  // Launch Chrome headless — page will render via Canvas API and POST result to server
+  const chromeProcess = execFileAsync(chromeBinary, [
     '--headless=new',
     '--disable-gpu',
     '--hide-scrollbars',
-    '--virtual-time-budget=20000',
-    '--run-all-compositor-stages-before-draw',
+    '--virtual-time-budget=60000',
     '--force-device-scale-factor=1',
-    '--window-size=1242,1656',
-    `--screenshot=${outputPath}`,
+    '--window-size=1280,1024',
     automationUrl
   ], {
     maxBuffer: 8 * 1024 * 1024,
-    timeout: 30000
+    timeout: 90000
   });
 
-  const result = {
-    ok: true,
-    mode,
-    title,
-    subtitle: args.subtitle || '',
-    favoriteId: args.favoriteId || '',
-    filePath: outputPath,
-    relativePath: path.relative(process.cwd(), outputPath)
-  };
+  // Poll server for the automation result (rendered by page Canvas + uploaded via API)
+  const result = await pollAutomationResult(server.url);
+
+  if (!result.ok) {
+    throw new Error(result.error || '自动化渲染失败');
+  }
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+
+  // Wait for Chrome to finish (or let it timeout naturally)
+  chromeProcess.catch(() => {});
 } finally {
   await server.close();
 }

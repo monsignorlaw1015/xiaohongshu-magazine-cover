@@ -42,6 +42,8 @@ function json(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+let automationResultStore = null;
+
 async function readRequestBody(request) {
   const chunks = [];
   let totalLength = 0;
@@ -181,6 +183,22 @@ async function handleRequest(request, response) {
     } catch (error) {
       json(response, 400, { error: error.message || '图片写入失败' });
     }
+    return;
+  }
+
+  if (url.pathname === '/api/automation-result' && request.method === 'POST') {
+    try {
+      const body = await readRequestBody(request);
+      automationResultStore = JSON.parse(body || '{}');
+      json(response, 200, { ok: true });
+    } catch (error) {
+      json(response, 400, { error: error.message || '结果存储失败' });
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/automation-result' && request.method === 'GET') {
+    json(response, 200, automationResultStore || { status: 'pending' });
     return;
   }
 

@@ -1192,9 +1192,8 @@
 
     html[data-automation-mode="true"],
     html[data-automation-mode="true"] body {
-      width: 1242px;
-      height: 1656px;
-      min-height: 1656px;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background: transparent;
       padding: 0;
@@ -1227,7 +1226,7 @@
     }
 
     html[data-automation-mode="true"] .preview-stage {
-      width: 1242px;
+      width: 100vw;
       max-width: none;
       margin: 0;
       padding: 0;
@@ -1237,10 +1236,14 @@
     }
 
     html[data-automation-mode="true"] .xhs-cover {
-      width: 1242px;
-      height: 1656px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       border-radius: 0;
       box-shadow: none;
+      aspect-ratio: auto;
     }
 
     .xhs-cover {
@@ -6289,10 +6292,6 @@
           updatePreview();
         }
       } else if (mode === 'favorites') {
-        if (!favoritesSyncAvailable) {
-          throw new Error('收藏服务不可用，无法自动套用收藏');
-        }
-
         const targetFavoriteId = request.favoriteId || activeFavoriteId || favoriteConfigs[0]?.id;
         const favorite = favoriteConfigs.find((item) => item.id === targetFavoriteId);
         if (!favorite) {
@@ -6890,13 +6889,25 @@
       .then(async () => {
         if (automationRequest) {
           try {
-            await prepareAutomationState(automationRequest);
+            const result = await runAutomation(automationRequest);
+            // Post result to server for external polling
+            await fetch('/api/automation-result', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(result)
+            }).catch(() => {});
           } catch (error) {
             console.error(error);
-            setAutomationResult({
+            const errorResult = {
               ok: false,
               error: error.message || '自动化执行失败'
-            });
+            };
+            setAutomationResult(errorResult);
+            await fetch('/api/automation-result', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(errorResult)
+            }).catch(() => {});
           }
         } else {
           setAutomationResult({ status: 'ready' });
