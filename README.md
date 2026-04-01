@@ -84,6 +84,10 @@ AI 会引导你选择模式：
 
 ---
 
+## 致谢
+
+本项目的设计灵感来源于 [citycraft](https://github.com/oil-oil/citycraft)，感谢作者的开源贡献。
+
 ## License
 
 [MIT](LICENSE)
