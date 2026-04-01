@@ -14,21 +14,19 @@
 
 适合所有人，不需要任何技术基础。
 
-### 第一步：下载
+### 下载
 
-去 [GitHub Releases](../../releases) 下载最新的 `小红书封面图生成器.zip`，解压到任意位置。
+去 [GitHub Releases](../../releases) 下载最新的压缩包，解压到任意位置。
 
-### 第二步：打开
+### 打开
 
 双击解压后的 `index.html`，浏览器会自动打开编辑页面。
 
-### 第三步：做封面
+### 做封面
 
 - 左边是控制面板，右边是实时预览
 - 选模板、改字体、换背景、调颜色
 - 满意了点「导出 PNG」下载图片
-
-> 抽卡和收藏功能需要启动本地服务，见下方「AI 用户」部分。
 
 ---
 
@@ -38,30 +36,17 @@
 
 ### 安装
 
-需要 Node.js 18+ 和 Google Chrome。
+把本仓库下载或克隆到你的 skills 目录：
 
+**OpenClaw：**
 ```bash
-npm install -g xiaohongshu-cover-generator
+git clone https://github.com/monsignorlaw1015/xiaohongshu-magazine-cover.git ~/.openclaw/skills/xiaohongshu-cover
 ```
 
-### 安装到 OpenClaw
-
+**Claude Code：**
 ```bash
-xhs-cover install openclaw
-```
-
-### 安装到 Claude Code
-
-安装到当前项目：
-
-```bash
-xhs-cover install claude-code
-```
-
-安装为全局 agent：
-
-```bash
-xhs-cover install claude-code --scope user
+git clone https://github.com/monsignorlaw1015/xiaohongshu-magazine-cover.git
+# 然后把仓库路径添加到你的 Claude Code agent 配置中
 ```
 
 ### 使用
@@ -76,27 +61,16 @@ AI 会引导你选择模式：
 
 | 模式 | 说明 |
 |------|------|
-| **自行创建** | AI 打开浏览器编辑页面，你自己调参数 |
+| **自行创建** | AI 打开浏览器页面，你自己调参数 |
 | **抽卡** | 你给个标题，AI 随机出一套封面 |
 | **收藏** | 用你之前存好的风格，换文案直接出图 |
 
 生成的图片会直接显示在对话中。
 
-### 手动调用（不需要 AI）
+### 前置条件
 
-```bash
-# 启动编辑页面
-xhs-cover open-create --title "你的标题"
-
-# 抽卡出图
-xhs-cover render --mode draw --title "你的标题"
-
-# 用收藏出图
-xhs-cover render --mode favorites --title "你的标题"
-
-# 查看收藏列表
-xhs-cover list-favorites
-```
+- **Node.js 18+**（抽卡和收藏模式需要）
+- **Google Chrome**（抽卡和收藏模式需要，自行创建模式不需要）
 
 ---
 
