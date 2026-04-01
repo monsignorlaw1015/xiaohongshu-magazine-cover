@@ -1,0 +1,4 @@
+.DS_Store
+outputs/
+data/favorites.json
+node_modules/
