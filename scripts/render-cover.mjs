@@ -112,14 +112,15 @@ try {
     '--headless=new',
     '--disable-gpu',
     '--hide-scrollbars',
-    '--virtual-time-budget=12000',
+    '--virtual-time-budget=20000',
+    '--run-all-compositor-stages-before-draw',
     '--force-device-scale-factor=1',
     '--window-size=1242,1656',
     `--screenshot=${outputPath}`,
     automationUrl
   ], {
     maxBuffer: 8 * 1024 * 1024,
-    timeout: 20000
+    timeout: 30000
   });
 
   const result = {

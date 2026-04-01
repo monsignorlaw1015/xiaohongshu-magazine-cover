@@ -78,8 +78,8 @@ node <skill根目录>/scripts/open-create.mjs --title "标题" --subtitle "副�
 
 #### 抽卡
 
-1. 如果用户没给主标题，问用户："封面主标题是什么？"
-2. 副标题和内容倾向（intent）**不主动问**，用户自己提了才传
+1. 如果用户没给主标题，问用户："封面主标题是什么？（也可以提供副标题，副标题是可选的）"
+2. 内容倾向（intent）**不主动问**，用户自己提了才传
 3. 执行：
 
 ```bash
@@ -113,7 +113,8 @@ node <skill根目录>/scripts/render-cover.mjs --mode favorites --favoriteId "�
 
 1. 从输出中解析 `filePath`
 2. 读取该图片文件，在对话中展示给用户
-3. 告诉用户："封面图已生成"
+3. 告诉用户："封面图已生成，保存在：`filePath`"
+4. 帮用户打开图片所在文件夹（macOS 用 `open`，Windows 用 `explorer`）
 
 ### 错误处理
 
